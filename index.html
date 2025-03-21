@@ -7,7 +7,10 @@
 </head>
 <body>
   <h1>SYCBox</h1>
-  <input type="file" id="romInput" accept=".nes">
+  
+  <!-- Кнопки выбора ROM -->
+  <div id="romMenu"></div>
+  
   <button id="fullscreenBtn">Fullscreen</button>
   <canvas id="screen" width="256" height="240"></canvas>
 
@@ -15,9 +18,7 @@
   <script>
     const canvas = document.getElementById("screen");
     const context = canvas.getContext("2d", { willReadFrequently: true });
-    const romInput = document.getElementById("romInput");
     let romLoaded = false;
-
     const nes = new jsnes.NES({
       onFrame(frameBuffer) {
         const imageData = context.getImageData(0, 0, 256, 240);
@@ -41,29 +42,14 @@
       requestAnimationFrame(frameLoop);
     }
 
-    romInput.addEventListener("change", function(event) {
-      const reader = new FileReader();
-      reader.onload = () => loadROM(reader.result);
-      reader.readAsBinaryString(event.target.files[0]);
-    });
-const FPS = 60;
-const interval = 1000 / FPS;
-let lastTime = performance.now();
-
-function frameLoop(currentTime) {
-  const elapsed = currentTime - lastTime;
-
-  if (elapsed >= interval) {
-    if (romLoaded) nes.frame();
-    lastTime = currentTime - (elapsed % interval);
-  }
-
-  requestAnimationFrame(frameLoop);
-}
+    function frameLoop() {
+      if (romLoaded) nes.frame();
+      requestAnimationFrame(frameLoop);
+    }
 
     document.getElementById("fullscreenBtn").onclick = () => canvas.requestFullscreen();
 
-    // Аудио (работает отлично)
+    // Аудио
     let audioContext, scriptNode;
     const audioBuffer = [];
 
@@ -84,66 +70,62 @@ function frameLoop(currentTime) {
       audioContext.resume();
     };
 
-    // ---- Управление с клавиатуры, геймпада и пульта ТВ ----
+    // Создаём меню выбора ROM
+    const romFiles = ["mario.nes", "contra.nes", "battletoads.nes"]; // добавляй сюда файлы
+    const romMenu = document.getElementById("romMenu");
 
+    romFiles.forEach(filename => {
+      const button = document.createElement("button");
+      button.textContent = filename.replace(".nes", "");
+      button.onclick = () => {
+        fetch(`roms/${filename}`)
+          .then(response => response.arrayBuffer())
+          .then(arrayBuffer => {
+            const binaryString = String.fromCharCode(...new Uint8Array(arrayBuffer));
+            loadROM(binaryString);
+          });
+      };
+      romMenu.appendChild(button);
+    });
+
+    // Управление с клавиатуры, геймпада и ТВ (оставляем как есть, уже настроено)
     const BUTTONS = jsnes.Controller;
-
     const KEY_MAP = {
-      38: BUTTONS.BUTTON_UP,     // ↑
-      40: BUTTONS.BUTTON_DOWN,   // ↓
-      37: BUTTONS.BUTTON_LEFT,   // ←
-      39: BUTTONS.BUTTON_RIGHT,  // →
-      90: BUTTONS.BUTTON_A,      // Z
-      88: BUTTONS.BUTTON_B,      // X
-      13: BUTTONS.BUTTON_START,  // Enter
-      16: BUTTONS.BUTTON_SELECT, // Shift
-      // Пульт ТВ
-      461: BUTTONS.BUTTON_B,     // Назад (Back) на Tizen/WebOS
-      415: BUTTONS.BUTTON_START, // Play на Tizen/WebOS
+      38: BUTTONS.BUTTON_UP, 40: BUTTONS.BUTTON_DOWN,
+      37: BUTTONS.BUTTON_LEFT, 39: BUTTONS.BUTTON_RIGHT,
+      90: BUTTONS.BUTTON_A, 88: BUTTONS.BUTTON_B,
+      13: BUTTONS.BUTTON_START, 16: BUTTONS.BUTTON_SELECT,
+      461: BUTTONS.BUTTON_B, 415: BUTTONS.BUTTON_START,
     };
 
     window.addEventListener("keydown", event => {
       const key = KEY_MAP[event.keyCode];
-      if (key !== undefined) {
-        nes.buttonDown(1, key);
-        event.preventDefault();
-      }
+      if (key !== undefined) nes.buttonDown(1, key);
     });
 
     window.addEventListener("keyup", event => {
       const key = KEY_MAP[event.keyCode];
-      if (key !== undefined) {
-        nes.buttonUp(1, key);
-        event.preventDefault();
-      }
+      if (key !== undefined) nes.buttonUp(1, key);
     });
 
-    // --- Поддержка Xbox геймпада через Gamepad API ---
-
     const GAMEPAD_MAP = {
-      12: BUTTONS.BUTTON_UP,    // D-pad вверх
-      13: BUTTONS.BUTTON_DOWN,  // D-pad вниз
-      14: BUTTONS.BUTTON_LEFT,  // D-pad влево
-      15: BUTTONS.BUTTON_RIGHT, // D-pad вправо
-      0: BUTTONS.BUTTON_A,      // A (Xbox)
-      1: BUTTONS.BUTTON_B,      // B (Xbox)
-      9: BUTTONS.BUTTON_START,  // Start/Menu (Xbox)
-      8: BUTTONS.BUTTON_SELECT, // Select/View (Xbox)
+      12: BUTTONS.BUTTON_UP, 13: BUTTONS.BUTTON_DOWN,
+      14: BUTTONS.BUTTON_LEFT, 15: BUTTONS.BUTTON_RIGHT,
+      0: BUTTONS.BUTTON_A, 1: BUTTONS.BUTTON_B,
+      9: BUTTONS.BUTTON_START, 8: BUTTONS.BUTTON_SELECT,
     };
 
     function pollGamepad() {
-      const gamepads = navigator.getGamepads();
-      const gp = gamepads[0];
-      if (!gp) return;
-
-      gp.buttons.forEach((button, index) => {
-        const nesButton = GAMEPAD_MAP[index];
-        if (nesButton !== undefined) {
-          if (button.pressed) nes.buttonDown(1, nesButton);
-          else nes.buttonUp(1, nesButton);
-        }
-      });
-
+      const gp = navigator.getGamepads()[0];
+      if (gp) {
+        gp.buttons.forEach((button, index) => {
+          const nesButton = GAMEPAD_MAP[index];
+          if (nesButton !== undefined) {
+            if (button.pressed) nes.buttonDown(1, nesButton);
+            else nes.buttonUp(1, nesButton);
+          }
+        });
+      }
       requestAnimationFrame(pollGamepad);
     }
 
