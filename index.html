@@ -8,13 +8,14 @@
 <body>
   <h1>SYCBox</h1>
   
-  <!-- Кнопки выбора ROM -->
   <div id="romMenu"></div>
   
   <button id="fullscreenBtn">Fullscreen</button>
   <canvas id="screen" width="256" height="240"></canvas>
 
-  <script src="node_modules/jsnes/dist/jsnes.js"></script>
+  <!-- Исправленное подключение jsnes -->
+  <script src="https://cdn.jsdelivr.net/npm/jsnes/dist/jsnes.min.js"></script>
+
   <script>
     const canvas = document.getElementById("screen");
     const context = canvas.getContext("2d", { willReadFrequently: true });
@@ -49,7 +50,6 @@
 
     document.getElementById("fullscreenBtn").onclick = () => canvas.requestFullscreen();
 
-    // Аудио
     let audioContext, scriptNode;
     const audioBuffer = [];
 
@@ -70,8 +70,7 @@
       audioContext.resume();
     };
 
-    // Создаём меню выбора ROM
-    const romFiles = ["mario.nes", "contra.nes", "battletoads.nes"]; // добавляй сюда файлы
+    const romFiles = ["mario.nes", "contra.nes", "battletoads.nes"];
     const romMenu = document.getElementById("romMenu");
 
     romFiles.forEach(filename => {
@@ -88,7 +87,6 @@
       romMenu.appendChild(button);
     });
 
-    // Управление с клавиатуры, геймпада и ТВ (оставляем как есть, уже настроено)
     const BUTTONS = jsnes.Controller;
     const KEY_MAP = {
       38: BUTTONS.BUTTON_UP, 40: BUTTONS.BUTTON_DOWN,
