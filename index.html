@@ -42,10 +42,21 @@
       requestAnimationFrame(frameLoop);
     }
 
-    function frameLoop() {
-      if (romLoaded) nes.frame();
-      requestAnimationFrame(frameLoop);
-    }
+   const FPS = 60;
+const interval = 1000 / FPS;
+let lastTime = performance.now();
+
+function frameLoop(currentTime) {
+  const elapsed = currentTime - lastTime;
+
+  if (elapsed >= interval) {
+    if (romLoaded) nes.frame();
+    lastTime = currentTime - (elapsed % interval);
+  }
+
+  requestAnimationFrame(frameLoop);
+}
+
 
     document.getElementById("fullscreenBtn").onclick = () => canvas.requestFullscreen();
 
