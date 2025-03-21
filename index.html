@@ -7,10 +7,10 @@
 </head>
 <body>
   <h1>SYCBox</h1>
-
+  
   <!-- Кнопки выбора ROM -->
   <div id="romMenu"></div>
-
+  
   <button id="fullscreenBtn">Fullscreen</button>
   <canvas id="screen" width="256" height="240"></canvas>
 
@@ -42,21 +42,10 @@
       requestAnimationFrame(frameLoop);
     }
 
-   const FPS = 60;
-const interval = 1000 / FPS;
-let lastTime = performance.now();
-
-function frameLoop(currentTime) {
-  const elapsed = currentTime - lastTime;
-
-  if (elapsed >= interval) {
-    if (romLoaded) nes.frame();
-    lastTime = currentTime - (elapsed % interval);
-  }
-
-  requestAnimationFrame(frameLoop);
-}
-
+    function frameLoop() {
+      if (romLoaded) nes.frame();
+      requestAnimationFrame(frameLoop);
+    }
 
     document.getElementById("fullscreenBtn").onclick = () => canvas.requestFullscreen();
 
